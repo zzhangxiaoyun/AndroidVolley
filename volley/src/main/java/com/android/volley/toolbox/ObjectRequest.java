@@ -72,7 +72,7 @@ public class ObjectRequest<T> extends Request<T> {
         } catch (UnsupportedEncodingException e) {
             parsed = new String(response.data);
         }
-        T t =new Gson().fromJson(parsed, mEntryClazz);
+        T t = new Gson().fromJson(parsed, mEntryClazz);
         return Response.success(t, HttpHeaderParser.parseCacheHeaders(response));
     }
 }
