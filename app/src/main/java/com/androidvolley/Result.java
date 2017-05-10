@@ -25,4 +25,12 @@ public class Result {
     public void setPageCount(int pageCount) {
         this.pageCount = pageCount;
     }
+
+    @Override
+    public String toString() {
+        return "Result{" +
+                "list=" + list +
+                ", pageCount=" + pageCount +
+                '}';
+    }
 }

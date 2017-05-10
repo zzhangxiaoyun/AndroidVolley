@@ -32,4 +32,13 @@ public class Data {
     public void setReturncode(int returncode) {
         this.returncode = returncode;
     }
+
+    @Override
+    public String toString() {
+        return "Data{" +
+                "message='" + message + '\'' +
+                ", result=" + result +
+                ", returncode=" + returncode +
+                '}';
+    }
 }

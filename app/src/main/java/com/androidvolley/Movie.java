@@ -1,5 +1,7 @@
 package com.androidvolley;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * Created by xiaoyun on 17-5-9.
  */
@@ -7,7 +9,8 @@ package com.androidvolley;
 public class Movie {
     private int id;
     private String name;
-    private String time;
+    @SerializedName("time")
+    private String publishTime;
 
     public int getId() {
         return id;
@@ -25,11 +28,20 @@ public class Movie {
         this.name = name;
     }
 
-    public String getTime() {
-        return time;
+    public String getPublishTime() {
+        return publishTime;
     }
 
-    public void setTime(String time) {
-        this.time = time;
+    public void setPublishTime(String publishTime) {
+        this.publishTime = publishTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Movie{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", publishTime='" + publishTime + '\'' +
+                '}';
     }
 }
