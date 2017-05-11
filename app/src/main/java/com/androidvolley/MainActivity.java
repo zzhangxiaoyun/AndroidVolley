@@ -63,7 +63,6 @@ public class MainActivity extends Activity {
                 log(error);
             }
         });
-        request.setShouldCache(true);
         request.setRetryPolicy(new RetryPolicy() {
             @Override
             public int getCurrentTimeout() {
@@ -80,8 +79,6 @@ public class MainActivity extends Activity {
                 log("retry:"+error.toString());
             }
         });
-
-        request.getCacheEntry();
 
         mRequestQueue.add(request);
 

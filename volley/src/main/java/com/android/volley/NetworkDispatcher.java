@@ -37,8 +37,6 @@ public class NetworkDispatcher extends Thread {
     private final BlockingQueue<Request<?>> mQueue;
     /** The network interface for processing requests. */
     private final Network mNetwork;
-    /** The cache to write to. */
-    private final Cache mCache;
     /** For posting responses and errors. */
     private final ResponseDelivery mDelivery;
     /** Used for telling us to die. */
@@ -50,15 +48,13 @@ public class NetworkDispatcher extends Thread {
      *
      * @param queue Queue of incoming requests for triage
      * @param network Network interface to use for performing requests
-     * @param cache Cache interface to use for writing responses to cache
      * @param delivery Delivery interface to use for posting responses
      */
     public NetworkDispatcher(BlockingQueue<Request<?>> queue,
-            Network network, Cache cache,
+            Network network,
             ResponseDelivery delivery) {
         mQueue = queue;
         mNetwork = network;
-        mCache = cache;
         mDelivery = delivery;
     }
 
@@ -112,23 +108,9 @@ public class NetworkDispatcher extends Thread {
                 NetworkResponse networkResponse = mNetwork.performRequest(request);
                 request.addMarker("network-http-complete");
 
-                // If the server returned 304 AND we delivered a response already,
-                // we're done -- don't deliver a second identical response.
-                if (networkResponse.notModified && request.hasHadResponseDelivered()) {
-                    request.finish("not-modified");
-                    continue;
-                }
-
                 // Parse the response here on the worker thread.
                 Response<?> response = request.parseNetworkResponse(networkResponse);
                 request.addMarker("network-parse-complete");
-
-                // Write to cache if applicable.
-                // TODO: Only update cache metadata instead of entire record for 304s.
-                if (request.shouldCache() && response.cacheEntry != null) {
-                    mCache.put(request.getCacheKey(), response.cacheEntry);
-                    request.addMarker("network-cache-written");
-                }
 
                 // Post the response back.
                 request.markDelivered();

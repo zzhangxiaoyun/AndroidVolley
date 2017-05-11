@@ -73,6 +73,6 @@ public class ObjectRequest<T> extends Request<T> {
             parsed = new String(response.data);
         }
         T t = new Gson().fromJson(parsed, mEntryClazz);
-        return Response.success(t, HttpHeaderParser.parseCacheHeaders(response));
+        return Response.success(t);
     }
 }

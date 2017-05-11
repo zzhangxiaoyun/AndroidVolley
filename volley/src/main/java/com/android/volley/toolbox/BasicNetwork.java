@@ -19,8 +19,6 @@ package com.android.volley.toolbox;
 import android.os.SystemClock;
 
 import com.android.volley.AuthFailureError;
-import com.android.volley.Cache;
-import com.android.volley.Cache.Entry;
 import com.android.volley.Network;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
@@ -38,14 +36,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.cookie.DateUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -92,31 +88,12 @@ public class BasicNetwork implements Network {
             try {
                 // Gather headers.
                 Map<String, String> headers = new HashMap<String, String>();
-                addCacheHeaders(headers, request.getCacheEntry());
                 httpResponse = mHttpStack.performRequest(request, headers);
                 StatusLine statusLine = httpResponse.getStatusLine();
                 int statusCode = statusLine.getStatusCode();
 
                 responseHeaders = convertHeaders(httpResponse.getAllHeaders());
-                // Handle cache validation.
-                if (statusCode == HttpStatus.SC_NOT_MODIFIED) {
 
-                    Entry entry = request.getCacheEntry();
-                    if (entry == null) {
-                        return new NetworkResponse(HttpStatus.SC_NOT_MODIFIED, null,
-                                responseHeaders, true,
-                                SystemClock.elapsedRealtime() - requestStart);
-                    }
-
-                    // A HTTP 304 response does not have all header fields. We
-                    // have to use the header fields from the cache entry plus
-                    // the new ones from the response.
-                    // http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-                    entry.responseHeaders.putAll(responseHeaders);
-                    return new NetworkResponse(HttpStatus.SC_NOT_MODIFIED, entry.data,
-                            entry.responseHeaders, true,
-                            SystemClock.elapsedRealtime() - requestStart);
-                }
 
                 // Some responses such as 204s do not have content.  We must check.
                 if (httpResponse.getEntity() != null) {
@@ -131,10 +108,12 @@ public class BasicNetwork implements Network {
                 long requestLifetime = SystemClock.elapsedRealtime() - requestStart;
                 logSlowRequests(requestLifetime, request, responseContents, statusLine);
 
-                if (statusCode < 200 || statusCode > 299) {
+                // Handle cache validation.
+                if (statusCode != HttpStatus.SC_NOT_MODIFIED
+                        && (statusCode < 200 || statusCode > 299)) {
                     throw new IOException();
                 }
-                return new NetworkResponse(statusCode, responseContents, responseHeaders, false,
+                return new NetworkResponse(statusCode, responseContents, responseHeaders,
                         SystemClock.elapsedRealtime() - requestStart);
             } catch (SocketTimeoutException e) {
                 attemptRetryOnException("socket", request, new TimeoutError());
@@ -153,7 +132,7 @@ public class BasicNetwork implements Network {
                 VolleyLog.e("Unexpected response code %d for %s", statusCode, request.getUrl());
                 if (responseContents != null) {
                     networkResponse = new NetworkResponse(statusCode, responseContents,
-                            responseHeaders, false, SystemClock.elapsedRealtime() - requestStart);
+                            responseHeaders, SystemClock.elapsedRealtime() - requestStart);
                     if (statusCode == HttpStatus.SC_UNAUTHORIZED ||
                             statusCode == HttpStatus.SC_FORBIDDEN) {
                         attemptRetryOnException("auth",
@@ -200,22 +179,6 @@ public class BasicNetwork implements Network {
             throw e;
         }
         request.addMarker(String.format("%s-retry [timeout=%s]", logPrefix, oldTimeout));
-    }
-
-    private void addCacheHeaders(Map<String, String> headers, Cache.Entry entry) {
-        // If there's no cache entry, we're done.
-        if (entry == null) {
-            return;
-        }
-
-        if (entry.etag != null) {
-            headers.put("If-None-Match", entry.etag);
-        }
-
-        if (entry.lastModified > 0) {
-            Date refTime = new Date(entry.lastModified);
-            headers.put("If-Modified-Since", DateUtils.formatDate(refTime));
-        }
     }
 
     protected void logError(String what, String url, long start) {

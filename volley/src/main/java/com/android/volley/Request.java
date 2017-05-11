@@ -81,9 +81,6 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     /** The request queue this request is associated with. */
     private RequestQueue mRequestQueue;
 
-    /** Whether or not responses to this request should be cached. */
-    private boolean mShouldCache = true;
-
     /** Whether or not this request has been canceled. */
     private boolean mCanceled = false;
 
@@ -98,13 +95,6 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /** The retry policy for this request. */
     private RetryPolicy mRetryPolicy;
-
-    /**
-     * When a request can be retrieved from cache but must be refreshed from
-     * the network, the cache entry will be stored here so that in the event of
-     * a "Not Modified" response, we can be sure it hasn't been evicted from cache.
-     */
-    private Cache.Entry mCacheEntry = null;
 
     /** An opaque token tagging this request; used for bulk cancellation. */
     private Object mTag;
@@ -288,31 +278,6 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     }
 
     /**
-     * Returns the cache key for this request.  By default, this is the URL.
-     */
-    public String getCacheKey() {
-        return getUrl();
-    }
-
-    /**
-     * Annotates this request with an entry retrieved for it from cache.
-     * Used for cache coherency support.
-     *
-     * @return This Request object to allow for chaining.
-     */
-    public Request<?> setCacheEntry(Cache.Entry entry) {
-        mCacheEntry = entry;
-        return this;
-    }
-
-    /**
-     * Returns the annotated cache entry, or null if there isn't one.
-     */
-    public Cache.Entry getCacheEntry() {
-        return mCacheEntry;
-    }
-
-    /**
      * Mark this request as canceled.  No callback will be delivered.
      */
     public void cancel() {
@@ -467,23 +432,6 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         } catch (UnsupportedEncodingException uee) {
             throw new RuntimeException("Encoding not supported: " + paramsEncoding, uee);
         }
-    }
-
-    /**
-     * Set whether or not responses to this request should be cached.
-     *
-     * @return This Request object to allow for chaining.
-     */
-    public final Request<?> setShouldCache(boolean shouldCache) {
-        mShouldCache = shouldCache;
-        return this;
-    }
-
-    /**
-     * Returns true if responses to this request should be cached.
-     */
-    public final boolean shouldCache() {
-        return mShouldCache;
     }
 
     /**
